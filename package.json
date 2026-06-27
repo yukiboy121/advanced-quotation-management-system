@@ -2,12 +2,12 @@
   "name": "nextjs-postgresql-template",
   "private": true,
   "scripts": {
-er    "dev": "next dev -r dotenv/config",
-    "build": "next build",
+    "dev": "next dev -r dotenv/config",
+    "build": "next build -r dotenv/config",
     "start": "next start -r dotenv/config",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "db:seed": "tsx -r dotenv/config src/db/seed.ts"
+    "postinstall": "npx -p drizzle-kit@latest -- drizzle-kit push && npm run db:seed"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -43,7 +43,6 @@ er    "dev": "next dev -r dotenv/config",
     "eslint-config-next": "16.2.6",
     "postcss": "8.5.8",
     "tailwindcss": "4.1.17",
-    "typescript": "5.9.3",
-    "tsx": "^4.16.2"
+    "typescript": "5.9.3"
   }
 }

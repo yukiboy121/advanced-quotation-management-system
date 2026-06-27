@@ -43,10 +43,10 @@ async function seed() {
   }
 
   console.log("Database seeding complete.");
-  process.exit(0);
 }
 
 seed().catch((error) => {
   console.error("Database seeding failed:", error);
-  process.exit(1);
+  // Throwing an error will cause the build to fail, which is the desired behavior.
+  throw new Error("Database seeding failed");
 });
