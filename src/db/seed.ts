@@ -1,44 +1,98 @@
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import { db } from ".";
-import { roles, userRoles, users } from "./schema";
+import {
+  brands,
+  categories,
+  companies,
+  currencies,
+  customers,
+  permissions,
+  products,
+  rolePermissions,
+  roles,
+  taxes,
+  userRoles,
+  users,
+} from "./schema";
+
+const defaultRoles = ["super-admin", "admin", "manager", "sales-executive", "employee", "viewer"];
+const defaultPermissions = [
+  "dashboard.read",
+  "customers.read",
+  "customers.write",
+  "products.read",
+  "products.write",
+  "quotations.read",
+  "quotations.write",
+  "reports.read",
+  "settings.write",
+  "users.write",
+];
 
 async function seed() {
   console.log("Seeding database...");
 
-  // --- Create roles ---
-  const adminRole = await db
-    .insert(roles)
-    .values({ name: "admin", description: "Administrator with all permissions" })
-    .onConflictDoNothing()
-    .returning();
-  const viewerRole = await db
-    .insert(roles)
-    .values({ name: "viewer", description: "User with read-only permissions" })
-    .onConflictDoNothing()
-    .returning();
+  for (const roleName of defaultRoles) {
+    await db.insert(roles).values({ name: roleName, isSystem: true }).onConflictDoNothing();
+  }
+  console.log("✅ Roles seeded");
 
-  console.log("✅ Roles created");
+  for (const permissionKey of defaultPermissions) {
+    await db.insert(permissions).values({ key: permissionKey }).onConflictDoNothing();
+  }
+  console.log("✅ Permissions seeded");
 
-  // --- Create a default admin user ---
-  const adminUserEmail = "admin@example.com";
-  const existingAdmin = await db.query.users.findFirst({ where: (u, { eq }) => eq(u.email, adminUserEmail) });
+  const adminRole = await db.query.roles.findFirst({ where: eq(roles.name, "admin") });
+  const allPermissions = await db.query.permissions.findMany();
 
-  if (!existingAdmin && adminRole.length > 0) {
-    const passwordHash = await bcrypt.hash("Admin@12345", 12);
-    const [adminUser] = await db
+  if (adminRole) {
+    for (const p of allPermissions) {
+      await db.insert(rolePermissions).values({ roleId: adminRole.id, permissionId: p.id }).onConflictDoNothing();
+    }
+    console.log("✅ Admin role permissions assigned");
+  }
+
+  await db
+    .insert(currencies)
+    .values([
+      { code: "USD", symbol: "$", name: "US Dollar", isDefault: true },
+      { code: "EUR", symbol: "€", name: "Euro" },
+      { code: "GBP", symbol: "£", name: "British Pound" },
+    ])
+    .onConflictDoNothing();
+  console.log("✅ Currencies seeded");
+
+  await db
+    .insert(companies)
+    .values({
+      name: "Acme Quotation Systems",
+      email: "sales@acme-quote.com",
+      phone: "+1 555 0199",
+      website: "https://acme-quote.com",
+      address: "450 Market Street",
+      city: "San Francisco",
+      country: "USA",
+      quotePrefix: "AQ",
+      invoicePrefix: "INV",
+    })
+    .onConflictDoNothing();
+  console.log("✅ Company info seeded");
+
+  await db.insert(taxes).values([{ name: "VAT", rate: "15.00" }, { name: "NBT", rate: "2.00" }]).onConflictDoNothing();
+  await db.insert(categories).values([{ name: "Software" }, { name: "Hardware" }, { name: "Consulting" }]).onConflictDoNothing();
+  await db.insert(brands).values([{ name: "Acme" }, { name: "Nimbus" }]).onConflictDoNothing();
+  console.log("✅ Taxes, Categories, and Brands seeded");
+
+  const existingAdmin = await db.query.users.findFirst({ where: eq(users.email, "admin@example.com") });
+  if (!existingAdmin && adminRole) {
+    const hash = await bcrypt.hash("Admin@12345", 12);
+    const [admin] = await db
       .insert(users)
-      .values({
-        fullName: "Admin User",
-        email: adminUserEmail,
-        passwordHash,
-        isActive: true,
-      })
+      .values({ fullName: "System Admin", email: "admin@example.com", passwordHash: hash })
       .returning();
 
-    await db.insert(userRoles).values({
-      userId: adminUser.id,
-      roleId: adminRole[0].id,
-    });
+    await db.insert(userRoles).values({ userId: admin.id, roleId: adminRole.id }).onConflictDoNothing();
     console.log("✅ Default admin user created");
   }
 
@@ -47,6 +101,5 @@ async function seed() {
 
 seed().catch((error) => {
   console.error("Database seeding failed:", error);
-  // Throwing an error will cause the build to fail, which is the desired behavior.
   throw new Error("Database seeding failed");
 });
