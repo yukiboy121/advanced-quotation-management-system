@@ -2,6 +2,10 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import type { NextRequest } from "next/server";
 
+if (!process.env.JWT_SECRET) {
+  throw new Error("JWT_SECRET environment variable is not set");
+}
+
 const secret = new TextEncoder().encode(process.env.JWT_SECRET ?? "dev_jwt_secret_change_me");
 const ISSUER = "quotation-saas";
 const AUDIENCE = "quotation-users";
