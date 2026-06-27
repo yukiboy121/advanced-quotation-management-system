@@ -2,10 +2,10 @@
   "name": "nextjs-postgresql-template",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint .",
+    "dev": "next dev -r dotenv/config",
+    "build": "next build -r dotenv/config",
+    "start": "next start -r dotenv/config",
+    "lint": "next lint",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
