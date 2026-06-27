@@ -2,9 +2,9 @@
   "name": "nextjs-postgresql-template",
   "private": true,
   "scripts": {
-    "dev": "next dev -r dotenv/config",
-    "build": "next build -r dotenv/config",
-    "start": "next start -r dotenv/config",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "postinstall": "npx -p drizzle-kit@latest -- drizzle-kit push && npm run db:seed"
