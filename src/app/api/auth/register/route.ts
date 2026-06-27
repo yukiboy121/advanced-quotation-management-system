@@ -38,15 +38,20 @@ export async function POST(req: NextRequest) {
     })
     .returning({ id: users.id, email: users.email });
 
-  const defaultRole = await db.query.roles.findFirst({ where: eq(roles.name, "admin") });
+  // Assign 'viewer' role to new users by default
+  const defaultRole = await db.query.roles.findFirst({ where: eq(roles.name, "viewer") });
+  let assignedRoles: string[] = [];
+
   if (defaultRole) {
     await db.insert(userRoles).values({ userId: created.id, roleId: defaultRole.id }).onConflictDoNothing();
+    assignedRoles.push(defaultRole.name);
   }
 
   const token = await signAuthToken({
     userId: created.id,
     email: created.email,
-    roles: defaultRole ? ["admin"] : ["viewer"],
+    // Use the role that was actually assigned
+    roles: assignedRoles,
   });
 
   await logActivity({

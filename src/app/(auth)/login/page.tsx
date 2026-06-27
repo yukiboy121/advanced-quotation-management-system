@@ -20,7 +20,12 @@ export default function LoginPage() {
 
     if (!res.ok) {
       const body = await res.json();
-      setError(body.error ?? "Login failed");
+      // Handle both string and object errors (from Zod)
+      const errorMessage = typeof body.error === 'string' 
+        ? body.error 
+        : body.error?.formErrors?.[0] ?? "Login failed. Please check your credentials.";
+
+      setError(errorMessage);
       return;
     }
 
